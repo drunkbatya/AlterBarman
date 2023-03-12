@@ -1,6 +1,6 @@
 import sqlalchemy
-from .settings import settings
 from sqlalchemy.ext.declarative import declarative_base
+from alterbar_settings import settings
 
 __engine = sqlalchemy.create_engine(settings.database_connect_string)
 

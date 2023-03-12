@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import atexit
-from lib.tg import startTelegramBot
-from lib.db import databaseInit, databaseCloseSession
+from alterbar_tg import startTelegramBot
+from alterbar_db import databaseInit, databaseCloseSession
 
 
 def atExit():

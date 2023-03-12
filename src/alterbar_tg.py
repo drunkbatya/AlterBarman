@@ -1,9 +1,8 @@
 import telebot
 import sqlalchemy
-from . import db
-from .settings import settings
-from .tg_keyboard import main_keyboard
-from .tg_security import checkUserID
+from alterbar_settings import settings
+from alterbar_tg_keyboard import main_keyboard
+from alterbar_tg_security import checkUserID
 
 __bot = telebot.TeleBot(settings.telegram_token)
 
