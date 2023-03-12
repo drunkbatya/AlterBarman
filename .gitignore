@@ -1,0 +1,4 @@
+*.swp
+other/
+__pycache__
+SEC*
