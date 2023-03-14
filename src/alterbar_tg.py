@@ -26,7 +26,7 @@ def text_handler(msg):
 
 
 # types.py L 2729
-@bot.callback_query_handler(lambda query: True)
+@bot.callback_query_handler(lambda query: "_" in query.data)
 def callbacks_inline_button(query):
     if not checkUserID(query.from_user.id):
         return False
