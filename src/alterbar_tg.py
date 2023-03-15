@@ -2,7 +2,7 @@ import telebot
 import sqlalchemy
 from alterbar_settings import settings
 from alterbar_tg_keyboard import main_keyboard
-from alterbar_tg_security import checkUserID
+from alterbar_tg_security import checkUserID, setUserIDs
 from scenes.alterbar_scene_new_order import showSceneNewOrder
 
 bot = telebot.TeleBot(settings.telegram_token)
@@ -35,6 +35,7 @@ def callbacks_inline_button(query):
 
 
 def startTelegramBot():
+    setUserIDs()
     bot.infinity_polling()
 
 
