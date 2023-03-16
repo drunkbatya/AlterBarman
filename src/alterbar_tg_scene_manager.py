@@ -1,8 +1,16 @@
 class Scene:
-    def __init__(self, onEnter, onEvent, onExit):
-        self.onEnter = onEnter
-        self.onEvent = onEvent
-        self.onExit = onExit
+    def __init__(self, name):
+        self.menu = None
+        self.name = name
+
+    def onEnter():
+        pass
+
+    def onEvent():
+        pass
+
+    def onExit():
+        pass
 
 
 class SceneManager:
@@ -10,20 +18,26 @@ class SceneManager:
         self.scene_stack = []
         self.scenes = {}
 
-    def addScene(self, name, scene):
-        self.scenes[name] = scene
+    def addScene(self, scene):
+        self.scenes[scene.name] = scene
 
     def nextScene(self, name, msg):
         scene = self.scenes[name]
+        print(f"Entering scene {scene.name}")
         self.scene_stack.append(scene)
         scene.onEnter(msg)
 
-    def previousScene(slef):
+    def previousScene(self, msg):
         scene = self.scene_stack.pop()
-        scene.enExit()
+        print(f"Leaving scene {scene.name}")
+        scene.onExit(msg)
         if len(self.scene_stack):
             self.scene_stack[-1].onEnter()
 
-    def sendEventToScene(self, event):
+    def sendEventToScene(self, event, msg):
         if len(self.scene_stack):
-            self.scene_stack[-1].onEvent(event)
+            if event == "back":
+                return self.previousScene(msg)
+            scene = self.scene_stack[-1]
+            print(f"Sending event to scene {scene.name}")
+            scene.onEvent(event, msg)

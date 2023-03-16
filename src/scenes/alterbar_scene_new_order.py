@@ -3,23 +3,18 @@ from alterbar_tg_menu import *
 from alterbar_tg_scene_manager import Scene
 
 
-def onEnter(msg):
-    menu = Menu("Menu header", add_back_button=True)
-    submenu = Menu("Menu header2", back_menu=menu, add_back_button=True)
-    menu.addButton("One")
-    menu.addButton("Two")
-    submenu.addButton("Test")
-    submenu.addButton("Fest")
-    submenu.addButton("Suck")
-    menu.show(msg)
+class addScene(Scene):
+    def onEnter(self, msg):
+        self.menu = Menu("Menu header")
+        self.menu.addButton("One")
+        self.menu.addButton("Two")
+        self.menu.show(msg)
+
+    def onEvent(self, event, msg):
+        print(f"Event recived {event}")
+
+    def onExit(self, msg):
+        self.menu.back(msg)
 
 
-def onEvent(event):
-    pass
-
-
-def onExit():
-    pass
-
-
-scene = Scene(onEnter, onEvent, onExit)
+scene = addScene("new_order")
