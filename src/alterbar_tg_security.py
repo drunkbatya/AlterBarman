@@ -3,6 +3,7 @@ import alterbar_db
 
 __userIDs = []
 
+
 def setUserIDs():
     global __userIDs
     userIDsDB = (
@@ -12,6 +13,7 @@ def setUserIDs():
     )
     # SQLAlchemy returns list of tuples
     __userIDs = [cur[0] for cur in userIDsDB]
+
 
 def checkUserID(userID):
     return userID in __userIDs

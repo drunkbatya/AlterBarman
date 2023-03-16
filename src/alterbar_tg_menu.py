@@ -47,6 +47,7 @@ class Menu:
         if callback_btn_number == "back":
             return self.back(query.message)
         alterbar_tg.bot.answer_callback_query(query.id)
+        alterbar_tg.scene_manager.sendEventToScene(callback_btn_number)
         print(f"Pressed button {callback_btn_number}")
 
     def show(self, msg):

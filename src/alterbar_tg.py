@@ -3,9 +3,11 @@ import sqlalchemy
 from alterbar_settings import settings
 from alterbar_tg_keyboard import main_keyboard
 from alterbar_tg_security import checkUserID, setUserIDs
-from scenes.alterbar_scene_new_order import showSceneNewOrder
+from alterbar_tg_scene_manager import SceneManager
+from scenes.alterbar_scene_config import scenesInit
 
 bot = telebot.TeleBot(settings.telegram_token)
+scene_manager = SceneManager()
 __alterbar_tg_inline_callback = None
 
 
@@ -22,7 +24,7 @@ def text_handler(msg):
     if not checkUserID(msg.from_user.id):
         return False
     if msg.text == "New order":
-        showSceneNewOrder(msg)
+        scene_manager.nextScene("new_order", msg)
 
 
 # types.py L 2729
@@ -35,6 +37,7 @@ def callbacks_inline_button(query):
 
 
 def startTelegramBot():
+    scenesInit()
     setUserIDs()
     bot.infinity_polling()
 
