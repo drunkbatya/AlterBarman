@@ -8,7 +8,6 @@ from scenes.alterbar_scene_config import scenesInit
 
 bot = telebot.TeleBot(settings.telegram_token)
 scene_manager = SceneManager()
-__alterbar_tg_inline_callback = None
 
 
 @bot.message_handler(commands=["start"])
@@ -21,10 +20,13 @@ def handle_start(msg):
 
 @bot.message_handler(content_types=["text"])
 def text_handler(msg):
-    if not checkUserID(msg.from_user.id):
+    userID = msg.from_user.id
+    messageID = msg.id
+    if not checkUserID(userID):
         return False
+    scene_manager.clearUserSceneStack(userID)
     if msg.text == "New order":
-        scene_manager.nextScene("new_order", msg)
+        scene_manager.nextScene("new_order", userID, messageID)
 
 
 # types.py L 2729
@@ -32,16 +34,10 @@ def text_handler(msg):
 def callbacks_inline_button(query):
     if not checkUserID(query.from_user.id):
         return False
-    if __alterbar_tg_inline_callback:
-        __alterbar_tg_inline_callback(query)
+    scene_manager.inlineCallback(query)
 
 
 def startTelegramBot():
     scenesInit()
     setUserIDs()
     bot.infinity_polling()
-
-
-def setTelegramInlineCallback(func):
-    global __alterbar_tg_inline_callback
-    __alterbar_tg_inline_callback = func

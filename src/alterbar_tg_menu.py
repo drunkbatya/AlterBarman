@@ -27,6 +27,12 @@ class Menu:
                 )
             )
 
+    def checkInlineButtonLink(self, btnMenuID, queryID) -> bool:
+        if btnMenuID != str(id(self)):
+            return False
+        alterbar_tg.bot.answer_callback_query(queryID)
+        return True
+
     def addButton(self, name: str):
         button_number = len(self.buttons)  # last
         callback_data = self.__constructButtonName(button_number)
@@ -34,21 +40,9 @@ class Menu:
             InlineKeyboardButton(text=name, callback_data=callback_data)
         )
 
-    def inlineParse(self, query):
-        callback_data_parsed = query.data.split("_")
-        callback_btn_menu_id = callback_data_parsed[0]
-        callback_btn_number = callback_data_parsed[1]
-        if callback_btn_menu_id != str(id(self)):
-            return
-        alterbar_tg.bot.answer_callback_query(query.id)
-        alterbar_tg.scene_manager.sendEventToScene(callback_btn_number, query.message)
-
-    def show(self, msg):
-        alterbar_tg.setTelegramInlineCallback(self.inlineParse)
+    def show(self, userID):
         self.__addButtons()
-        alterbar_tg.bot.send_message(
-            msg.from_user.id, self.header, reply_markup=self.kbd
-        )
+        alterbar_tg.bot.send_message(userID, self.header, reply_markup=self.kbd)
 
-    def back(self, msg):
-        alterbar_tg.bot.delete_message(msg.chat.id, msg.message_id)
+    def back(self, userID, messageID):
+        alterbar_tg.bot.delete_message(userID, messageID)

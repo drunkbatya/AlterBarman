@@ -1,19 +1,19 @@
 import time
-from alterbar_tg_menu import *
+from alterbar_tg_menu import Menu
 from alterbar_tg_scene_manager import Scene
 
 
 class addScene(Scene):
-    def onEnter(self, msg):
+    def onEnter(self, userID):
         self.menu = Menu("Another menu header")
         self.menu.addButton("Do nothing")
-        self.menu.show(msg)
+        self.menu.show(userID)
 
-    def onEvent(self, event, msg, scene_manager):
+    def onEvent(self, event, userID, messageID, scene_manager):
         print(f"Event recived {event}")
 
-    def onExit(self, msg):
-        self.menu.back(msg)
+    def onExit(self, userID, messageID):
+        self.menu.back(userID, messageID)
 
 
 scene = addScene("test")
