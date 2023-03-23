@@ -17,6 +17,7 @@ class Employee(__Base):
     tg_user_id = sqlalchemy.Column(sqlalchemy.BigInteger, nullable=False, unique=True)
 
 
+__authorizedUserIDs = []
 __Base.metadata.create_all(__engine)
 __Session = sqlalchemy.orm.sessionmaker()
 __Session.configure(bind=__engine)
@@ -28,19 +29,36 @@ def __databaseHasUsers():
     return len(users)
 
 
-def __createDefaultUser():
-    newEmployee = Employee(
-        first_name="Admin",
-        last_name="User",
-        tg_user_id=settings.admin_user_telegram_id,
-    )
-    session.add(newEmployee)
-    session.commit()
+def checkUserID(userID):
+    return userID in __authorizedUserIDs
 
 
 def databaseInit():
     if not __databaseHasUsers():
-        __createDefaultUser()
+        newEmployee = Employee(
+            first_name="Admin",
+            last_name="User",
+            tg_user_id=settings.admin_user_telegram_id,
+            is_active=True,
+            is_admin=True,
+        )
+        session.add(newEmployee)
+        session.commit()
+
+
+def updateAuthorizedUserIDs():
+    global __authorizedUserIDs
+    userIDsDB = session.query(Employee.tg_user_id).filter_by(is_active=True).all()
+    # SQLAlchemy returns list of tuples
+    __authorizedUserIDs = [cur[0] for cur in userIDsDB]
+
+
+def getAllEmployees():
+    return session.query(Employee).all()
+
+
+def getEmployeeByID(userID):
+    return session.query(Employee).filter_by(tg_user_id=userID).first()
 
 
 def databaseCloseSession():

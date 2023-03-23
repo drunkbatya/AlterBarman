@@ -1,6 +1,6 @@
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
-from alterbar_tg_security import checkUserID
+from alterbar_db import checkUserID
 
 main_keyboard_markup = ReplyKeyboardMarkup(
     [

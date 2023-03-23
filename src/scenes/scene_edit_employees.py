@@ -7,17 +7,19 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
 )
-from alterbar_tg_security import checkUserID
+from alterbar_db import checkUserID, getAllEmployees, getEmployeeByID, Employee
 
 USER_LIST = 0
 USER_EDIT = 1
 
 
 def constructEmployeesInlineKeybord():
-    buttons = [
-        [InlineKeyboardButton(str(user), callback_data="user_" + str(user))]
-        for user in range(10)
-    ]
+    employees = getAllEmployees()
+    buttons = []
+    for current in employees:
+        button_name = current.first_name + " " + current.last_name
+        callback_data = "user_" + str(current.tg_user_id)
+        buttons.append([InlineKeyboardButton(button_name, callback_data=callback_data)])
     buttons.append([InlineKeyboardButton("Back", callback_data="back")])
     return InlineKeyboardMarkup(buttons)
 
@@ -37,13 +39,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def edit_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
+    employee_tg_id = int(query.data.split("user_")[1])
+    employee = getEmployeeByID(employee_tg_id)
+    employee_name = employee.first_name + " " + employee.last_name
     keyboard = [
         [InlineKeyboardButton("Rename", callback_data="rename_1")],
         [InlineKeyboardButton("Delete", callback_data="delete_1")],
         [InlineKeyboardButton("Back", callback_data="back")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(text="Edit user USER", reply_markup=reply_markup)
+    await query.edit_message_text(
+        text=f'Edit user "{employee_name}"', reply_markup=reply_markup
+    )
     return USER_EDIT
 
 
