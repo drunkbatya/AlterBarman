@@ -9,8 +9,7 @@ from telegram.ext import (
 )
 from alterbar_db import checkUserID, getAllEmployees, getEmployeeByID, Employee
 
-USER_LIST = 0
-USER_EDIT = 1
+USER_LIST, EDIT_OR_ADD, USER_EDIT = range(3)
 
 
 def constructEmployeesInlineKeybord():
@@ -25,14 +24,29 @@ def constructEmployeesInlineKeybord():
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    reply_markup = constructEmployeesInlineKeybord()
+    keyboard = [
+        [InlineKeyboardButton("Add user", callback_data="add_user")],
+        [InlineKeyboardButton("Edit users", callback_data="edit_user")],
+        [InlineKeyboardButton("Back", callback_data="back")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    message = "What do you want to do?"
     if update.message:
         if not checkUserID(update.message.from_user.id):
             return None
-        await update.message.reply_text("Edit users", reply_markup=reply_markup)
+        await update.message.reply_text(message, reply_markup=reply_markup)
     else:
         query = update.callback_query
-        await query.edit_message_text(text="Edit users", reply_markup=reply_markup)
+        await query.answer()
+        await query.edit_message_text(message, reply_markup=reply_markup)
+    return EDIT_OR_ADD
+
+
+async def user_list_to_edit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    reply_markup = constructEmployeesInlineKeybord()
+    await query.edit_message_text(text="Edit users", reply_markup=reply_markup)
     return USER_LIST
 
 
@@ -65,12 +79,16 @@ def returnHandler():
     return ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^Edit employees$"), start)],
         states={
-            USER_LIST: [
-                CallbackQueryHandler(edit_user, pattern="^user_"),
+            EDIT_OR_ADD: [
+                CallbackQueryHandler(user_list_to_edit, pattern="^edit_user$"),
                 CallbackQueryHandler(cancel, pattern="^back$"),
             ],
-            USER_EDIT: [
+            USER_LIST: [
+                CallbackQueryHandler(edit_user, pattern="^user_"),
                 CallbackQueryHandler(start, pattern="^back$"),
+            ],
+            USER_EDIT: [
+                CallbackQueryHandler(user_list_to_edit, pattern="^back$"),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
