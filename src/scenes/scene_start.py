@@ -5,7 +5,7 @@ from alterbar_db import checkUserID
 main_keyboard_markup = ReplyKeyboardMarkup(
     [
         ["New order", "My orders", "All orders"],
-        ["Edit menu", "Edit employees"],
+        ["Edit menu", "Edit users"],
     ]
 )
 

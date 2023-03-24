@@ -61,5 +61,18 @@ def getEmployeeByID(userID):
     return session.query(Employee).filter_by(tg_user_id=userID).first()
 
 
+def renameUserByID(userID, first_name, last_name):
+    employee = getEmployeeByID(userID)
+    employee.first_name = first_name
+    employee.last_name = last_name
+    session.commit()
+
+
+def toggleAdminByID(userID):
+    employee = getEmployeeByID(userID)
+    employee.is_admin = not employee.is_admin
+    session.commit()
+
+
 def databaseCloseSession():
     session.close()
