@@ -9,11 +9,11 @@ from telegram.ext import (
 )
 import alterbar_db
 
-USER_LIST, EDIT_OR_ADD, USER_EDIT, USER_RENAME_DIALOG = range(4)
+USER_LIST, EDIT_OR_ADD, USER_EDIT, USER_RENAME_DIALOG, USER_DELETE_DIALOG = range(5)
 
 
-def constructEmployeesInlineKeybord():
-    users = alterbar_db.getAllEmployees()
+def constructEmployeesInlineKeybord() -> InlineKeyboardMarkup:
+    users = alterbar_db.getAllUsers()
     buttons = []
     for current in users:
         button_name = current.first_name + " " + current.last_name
@@ -57,7 +57,7 @@ async def edit_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_tg_id = int(user_tg_id)
     if action == "admintoggle":
         alterbar_db.toggleAdminByID(user_tg_id)
-    user = alterbar_db.getEmployeeByID(user_tg_id)
+    user = alterbar_db.getUserByID(user_tg_id)
     user_name = user.first_name + " " + user.last_name
     admin_toggle_text = "Dismiss admin" if user.is_admin else "Make admin"
     keyboard = [
@@ -81,7 +81,7 @@ async def rename_user_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE)
     query = update.callback_query
     await query.answer()
     user_tg_id = int(query.data.split("rename_")[1])
-    user = alterbar_db.getEmployeeByID(user_tg_id)
+    user = alterbar_db.getUserByID(user_tg_id)
     user_name = user.first_name + " " + user.last_name
     context.user_data["edit_user_user_id"] = user_tg_id
     message = (
@@ -106,6 +106,37 @@ async def rename_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     return ConversationHandler.END
 
 
+async def delete_user_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    user_tg_id = int(query.data.split("delete_")[1])
+    user = alterbar_db.getUserByID(user_tg_id)
+    user_name = user.first_name + " " + user.last_name
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Yes, i'm sure", callback_data="deleteconfirmed_" + str(user_tg_id)
+            )
+        ],
+        [InlineKeyboardButton("No, never", callback_data="cancel")],
+        [InlineKeyboardButton("Back", callback_data="user_" + str(user_tg_id))],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=f'Deleting user "{user_name}"\nAre you sure?', reply_markup=reply_markup
+    )
+    return USER_DELETE_DIALOG
+
+
+async def delete_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    user_tg_id = int(query.data.split("deleteconfirmed_")[1])
+    alterbar_db.deleteUserByID(user_tg_id)
+    await query.edit_message_text(text="Done!")
+    return ConversationHandler.END
+
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message:
         if not checkUserID(update.message.from_user.id):
@@ -118,7 +149,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
-def returnHandler():
+def returnHandler() -> ConversationHandler:
     return ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^Edit users$"), start)],
         states={
@@ -133,10 +164,16 @@ def returnHandler():
             USER_EDIT: [
                 CallbackQueryHandler(rename_user_dialog, pattern="^rename_"),
                 CallbackQueryHandler(edit_user, pattern="^admintoggle_"),
+                CallbackQueryHandler(delete_user_dialog, pattern="^delete_"),
                 CallbackQueryHandler(user_list_to_edit, pattern="^back$"),
             ],
             USER_RENAME_DIALOG: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, rename_user)
+            ],
+            USER_DELETE_DIALOG: [
+                CallbackQueryHandler(delete_user, pattern="^deleteconfirmed_"),
+                CallbackQueryHandler(cancel, pattern="^cancel$"),
+                CallbackQueryHandler(edit_user, pattern="^user_"),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],

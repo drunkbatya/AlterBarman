@@ -24,16 +24,16 @@ __Session.configure(bind=__engine)
 session = __Session()
 
 
-def __databaseHasUsers():
+def __databaseHasUsers() -> int:
     users = session.query(Employee.tg_user_id).filter_by(is_active=True).all()
     return len(users)
 
 
-def checkUserID(userID):
-    return userID in __authorizedUserIDs
+def checkUserID(tg_user_id) -> bool:
+    return tg_user_id in __authorizedUserIDs
 
 
-def databaseInit():
+def databaseInit() -> None:
     if not __databaseHasUsers():
         newEmployee = Employee(
             first_name="Admin",
@@ -46,33 +46,38 @@ def databaseInit():
         session.commit()
 
 
-def updateAuthorizedUserIDs():
+def updateAuthorizedUserIDs() -> None:
     global __authorizedUserIDs
-    userIDsDB = session.query(Employee.tg_user_id).filter_by(is_active=True).all()
+    tg_user_ids_db = session.query(Employee.tg_user_id).filter_by(is_active=True).all()
     # SQLAlchemy returns list of tuples
-    __authorizedUserIDs = [cur[0] for cur in userIDsDB]
+    __authorizedUserIDs = [cur[0] for cur in tg_user_ids_db]
 
 
-def getAllEmployees():
+def getAllUsers() -> list():
     return session.query(Employee).all()
 
 
-def getEmployeeByID(userID):
-    return session.query(Employee).filter_by(tg_user_id=userID).first()
+def getUserByID(tg_user_id: int) -> Employee:
+    return session.query(Employee).filter_by(tg_user_id=tg_user_id).first()
 
 
-def renameUserByID(userID, first_name, last_name):
-    employee = getEmployeeByID(userID)
+def renameUserByID(tg_user_id: int, first_name: str, last_name: str) -> None:
+    employee = getUserByID(tg_user_id)
     employee.first_name = first_name
     employee.last_name = last_name
     session.commit()
 
 
-def toggleAdminByID(userID):
-    employee = getEmployeeByID(userID)
+def toggleAdminByID(tg_user_id: int) -> None:
+    employee = getUserByID(tg_user_id)
     employee.is_admin = not employee.is_admin
     session.commit()
 
 
-def databaseCloseSession():
+def deleteUserByID(tg_user_id: int) -> None:
+    session.query(Employee).filter_by(tg_user_id=tg_user_id).delete()
+    session.commit()
+
+
+def databaseCloseSession() -> None:
     session.close()
