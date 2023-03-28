@@ -12,8 +12,7 @@ import alterbar_db
 USER_LIST, EDIT_OR_ADD, USER_EDIT, USER_RENAME_DIALOG, USER_DELETE_DIALOG = range(5)
 
 
-def constructEmployeesInlineKeybord() -> InlineKeyboardMarkup:
-    users = alterbar_db.getAllUsers()
+def constructEmployeesInlineKeybord(users) -> InlineKeyboardMarkup:
     buttons = []
     for current in users:
         button_name = current.first_name + " " + current.last_name
@@ -45,7 +44,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def user_list_to_edit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    reply_markup = constructEmployeesInlineKeybord()
+    users = alterbar_db.getAllUsers()
+    reply_markup = constructEmployeesInlineKeybord(users)
     await query.edit_message_text(text="Edit users", reply_markup=reply_markup)
     return USER_LIST
 
