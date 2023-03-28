@@ -193,5 +193,30 @@ def deleteCurrencyByID(currency_id: int) -> None:
     session.commit()
 
 
+def getAllCategories() -> list():
+    return session.query(Category).all()
+
+
+def getCategoryByID(category_id: int) -> Category:
+    return session.query(Category).get(category_id)
+
+
+def addCategory(name: str) -> None:
+    newCategory = Category(name=name)
+    session.add(newCategory)
+    session.commit()
+
+
+def renameCategoryByID(category_id: int, name: str) -> None:
+    category = getCategoryByID(category_id)
+    category.name = name
+    session.commit()
+
+
+def deleteCategoryByID(category_id: int) -> None:
+    session.query(Category).filter(Category.id == category_id).delete()
+    session.commit()
+
+
 def databaseCloseSession() -> None:
     session.close()

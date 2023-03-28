@@ -31,12 +31,10 @@ import alterbar_db
     EDIT_OR_ADD_CATEGORIES,
     CATEGORIES_LIST_TO_EDIT,
     EDIT_CATEGORIES,
-    EDIT_CATEGORIES_ASK_SHORT_NAME_FOR_CHANGE,
-    EDIT_CATEGORIES_ASK_FULL_NAME_FOR_CHANGE,
-    ADD_CATEGORIES_ASK_SHORT_NAME,
-    ADD_CATEGORIES_ASK_FULL_NAME,
-    CATEGORIES_DELETE_DIALOG,
-) = range(26)
+    EDIT_CATEGORIES_ASK_NAME_FOR_CHANGE,
+    ADD_CATEGORIES_ASK_NAME,
+    CATEGORY_DELETE_DIALOG,
+) = range(24)
 
 
 def constructCategoriesInlineKeybord(categories) -> InlineKeyboardMarkup:
@@ -482,6 +480,147 @@ async def edit_or_add_categories(
     return EDIT_OR_ADD_CATEGORIES
 
 
+def constructCategoriesInlineKeybord(categories) -> InlineKeyboardMarkup:
+    buttons = []
+    for current in categories:
+        button_name = f"{current.name}"
+        callback_data = "category_" + str(current.id)
+        buttons.append([InlineKeyboardButton(button_name, callback_data=callback_data)])
+    buttons.append([InlineKeyboardButton("Back", callback_data="back")])
+    return InlineKeyboardMarkup(buttons)
+
+
+async def edit_or_add_categories(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    query = update.callback_query
+    await query.answer()
+    keyboard = [
+        [InlineKeyboardButton("Add category", callback_data="add_category")],
+        [InlineKeyboardButton("Edit category", callback_data="edit_category")],
+        [InlineKeyboardButton("Back", callback_data="back")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text="What do you want to do?", reply_markup=reply_markup
+    )
+    return EDIT_OR_ADD_CATEGORIES
+
+
+async def add_categories_ask_name(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    query = update.callback_query
+    await query.answer()
+    message = (
+        "Enter name for new category\n\n"
+        "Example: Beer light\n\n"
+        "Send /cancel to abort this operation"
+    )
+    await query.edit_message_text(text=message)
+    return ADD_CATEGORIES_ASK_NAME
+
+
+async def add_category(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    name = update.message.text
+    alterbar_db.addCategory(name)
+    await update.message.reply_text(text="Done!")
+    return ConversationHandler.END
+
+
+async def categories_list_to_edit(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    query = update.callback_query
+    await query.answer()
+    categories = alterbar_db.getAllCategories()
+    reply_markup = constructCategoriesInlineKeybord(categories)
+    if len(categories):
+        msg = "Select category to edit"
+    else:
+        msg = "No categories found!\n\nYou need to add one from previous menu."
+    await query.edit_message_text(text=msg, reply_markup=reply_markup)
+    return CATEGORIES_LIST_TO_EDIT
+
+
+async def edit_categories(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    category_id = query.data.split("category_")[1]
+    category = alterbar_db.getCategoryByID(int(category_id))
+    keyboard = [
+        [InlineKeyboardButton("Rename", callback_data="rename_" + category_id)],
+        [InlineKeyboardButton("Delete", callback_data="delete_" + category_id)],
+        [InlineKeyboardButton("Back", callback_data="back")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=f'Edit category "{category.name}"',
+        reply_markup=reply_markup,
+    )
+    return EDIT_CATEGORIES
+
+
+async def edit_categories_ask_name_for_change(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    query = update.callback_query
+    await query.answer()
+    category_id = query.data.split("rename_")[1]
+    context.user_data["edit_categories_rename_category_id"] = category_id
+    category = alterbar_db.getCategoryByID(int(category_id))
+    message = (
+        f"Enter new name for category {category.name}\n\n"
+        f"Current value: {category.name}\n\n"
+        "Send /cancel to abort this operation"
+    )
+    await query.edit_message_text(text=message)
+    return EDIT_CATEGORIES_ASK_NAME_FOR_CHANGE
+
+
+async def edit_categories_rename(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    category_id = context.user_data["edit_categories_rename_category_id"]
+    name = update.message.text
+    alterbar_db.renameCategoryByID(category_id, name)
+    await update.message.reply_text(text="Done!")
+    return ConversationHandler.END
+
+
+async def delete_category_dialog(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    query = update.callback_query
+    await query.answer()
+    category_id = query.data.split("delete_")[1]
+    category = alterbar_db.getCategoryByID(int(category_id))
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Yes, i'm sure", callback_data="deleteconfirmed_" + category_id
+            )
+        ],
+        [InlineKeyboardButton("No, never", callback_data="cancel")],
+        [InlineKeyboardButton("Back", callback_data="category_" + category_id)],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=f'Deleting category "{category.name}"\nAre you sure?',
+        reply_markup=reply_markup,
+    )
+    return CATEGORY_DELETE_DIALOG
+
+
+async def delete_category(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    category_id = query.data.split("deleteconfirmed_")[1]
+    alterbar_db.deleteCategoryByID(category_id)
+    await query.edit_message_text(text="Done!")
+    return ConversationHandler.END
+
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message:
         if not alterbar_db.checkUserID(update.message.from_user.id):
@@ -607,6 +746,36 @@ def returnHandler() -> ConversationHandler:
             ],
             EDIT_OR_ADD_CATEGORIES: [
                 CallbackQueryHandler(start, pattern="^back$"),
+            ],
+            EDIT_OR_ADD_CATEGORIES: [
+                CallbackQueryHandler(add_categories_ask_name, pattern="^add_category$"),
+                CallbackQueryHandler(
+                    categories_list_to_edit, pattern="^edit_category$"
+                ),
+                CallbackQueryHandler(start, pattern="^back$"),
+            ],
+            ADD_CATEGORIES_ASK_NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, add_category)
+            ],
+            CATEGORIES_LIST_TO_EDIT: [
+                CallbackQueryHandler(edit_categories, pattern="^category_"),
+                CallbackQueryHandler(edit_or_add_categories, pattern="^back$"),
+            ],
+            EDIT_CATEGORIES: [
+                CallbackQueryHandler(
+                    edit_categories_ask_name_for_change,
+                    pattern="^rename_",
+                ),
+                CallbackQueryHandler(delete_category_dialog, pattern="^delete_"),
+                CallbackQueryHandler(categories_list_to_edit, pattern="^back$"),
+            ],
+            EDIT_CATEGORIES_ASK_NAME_FOR_CHANGE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, edit_categories_rename)
+            ],
+            CATEGORY_DELETE_DIALOG: [
+                CallbackQueryHandler(delete_category, pattern="^deleteconfirmed_"),
+                CallbackQueryHandler(cancel, pattern="^cancel$"),
+                CallbackQueryHandler(edit_categories, pattern="^category_"),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
